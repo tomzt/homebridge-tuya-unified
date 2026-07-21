@@ -2,6 +2,27 @@
 
 This file — not any assistant's local `CLAUDE.md`, which is per-machine and does **not** sync across environments — is the durable record of scope, architecture decisions, and task progress for this repo. Update it at the end of every sub-task.
 
+## Working Agreement
+
+Standing practice for every session that works on this project — applies for the life of the project, not just one task.
+
+Before porting/writing any code:
+1. Always check the real upstream source (`0x5e/homebridge-tuya-platform` branch `develop_1.7.0`, `tuya/tuya-homebridge`) before deciding on architecture or copying any structure/logic. Never rely on memory or assumption alone, no matter how confident it feels.
+
+After editing any file the end user sees directly (README, config.schema.json, NOTICE, SUPPORTED_DEVICES.md):
+2. Verify every field's description/default matches what the code actually does at that point in time. No field's description may claim something "works" while the code doesn't implement it yet (lesson from the `enableLocal` case, fixed in commit `d18049f`) — if it's not implemented, say so plainly.
+
+Before saying a task is done or pushed:
+3. Always `build` + `lint` locally first. Never assume they pass.
+4. After pushing, confirm by pulling the real code back from GitHub (fresh `git pull` or `gh api` without going through a cache) — don't just trust that push succeeded because the command didn't error. If checking via a cached web/API path (e.g. `raw.githubusercontent.com`), be aware it can serve stale data.
+
+At the end of every sub-task:
+5. Update NOTES.md immediately to match the latest real state (this file is the one thing that actually persists across sessions — not anyone's local `~/.claude/CLAUDE.md`).
+
+Constraints to keep in mind for the whole project:
+6. Never claim "tested against real hardware" unless it was actually tested on a real Homebridge instance with access to the user's home LAN — the sandbox can only make Cloud calls through a proxy.
+7. If you hit uncertainty or conflicting information while working, report it immediately instead of guessing and silently moving on.
+
 ## MVP scope
 
 - Switch / Socket → HomeKit `Switch` / `Outlet`
