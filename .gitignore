@@ -1,0 +1,23 @@
+
+# Compiled output
+/dist
+
+# Dependencies
+/node_modules
+
+# Config that could contain credentials
+config.json
+
+# Homebridge storage used for local dev/testing
+.homebridge/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor/OS
+.vscode/
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo

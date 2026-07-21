@@ -1,0 +1,112 @@
+{
+  "pluginAlias": "TuyaUnified",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Unified Tuya plugin (Cloud + Local hybrid). Reuse the Access ID / Access Secret from your existing Tuya IoT Platform Cloud Project — no need to create a new one.",
+  "footerDisplay": "MVP scope: switch/socket, light/bulb, curtain/garage door. See SUPPORTED_DEVICES.md for details and roadmap.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Tuya Unified",
+        "required": true
+      },
+      "endpoint": {
+        "title": "Tuya API Endpoint",
+        "type": "string",
+        "default": "https://openapi.tuyaus.com",
+        "oneOf": [
+          { "title": "America", "enum": ["https://openapi.tuyaus.com"] },
+          { "title": "America (Azure)", "enum": ["https://openapi-ueaz.tuyaus.com"] },
+          { "title": "China", "enum": ["https://openapi.tuyacn.com"] },
+          { "title": "Europe", "enum": ["https://openapi.tuyaeu.com"] },
+          { "title": "Europe (MS)", "enum": ["https://openapi-weaz.tuyaeu.com"] },
+          { "title": "India", "enum": ["https://openapi.tuyain.com"] }
+        ],
+        "required": true
+      },
+      "accessId": {
+        "title": "Access ID",
+        "type": "string",
+        "description": "Access ID/Client ID from your existing Tuya IoT Platform Cloud Project.",
+        "required": true
+      },
+      "accessSecret": {
+        "title": "Access Secret",
+        "type": "string",
+        "description": "Access Secret/Client Secret from your existing Tuya IoT Platform Cloud Project.",
+        "required": true
+      },
+      "appSchema": {
+        "title": "App",
+        "type": "string",
+        "default": "tuyaSmart",
+        "oneOf": [
+          { "title": "Tuya Smart", "enum": ["tuyaSmart"] },
+          { "title": "Smart Life", "enum": ["smartlife"] }
+        ],
+        "required": true
+      },
+      "countryCode": {
+        "title": "Country Code",
+        "type": "integer",
+        "description": "Phone country code used to link your Tuya/Smart Life app account (e.g. 1 for US, 66 for Thailand).",
+        "required": true
+      },
+      "username": {
+        "title": "Username",
+        "type": "string",
+        "description": "Tuya/Smart Life app account username (phone or email).",
+        "required": true
+      },
+      "password": {
+        "title": "Password",
+        "type": "string",
+        "description": "Tuya/Smart Life app account password.",
+        "required": true
+      },
+      "options": {
+        "title": "Advanced Options",
+        "type": "object",
+        "properties": {
+          "projectType": {
+            "title": "Cloud Project Type",
+            "type": "integer",
+            "default": 2,
+            "oneOf": [
+              { "title": "Custom Development", "enum": [1] },
+              { "title": "Smart Home PaaS", "enum": [2] }
+            ]
+          },
+          "enableLocal": {
+            "title": "Enable Local LAN Control",
+            "type": "boolean",
+            "default": true,
+            "description": "Control devices directly over your local network when possible, falling back to cloud control."
+          }
+        }
+      }
+    }
+  },
+  "form": [
+    "name",
+    "endpoint",
+    "accessId",
+    "accessSecret",
+    "appSchema",
+    "countryCode",
+    "username",
+    "password",
+    {
+      "type": "fieldset",
+      "title": "Advanced Options",
+      "expandable": true,
+      "items": [
+        "options.projectType",
+        "options.enableLocal"
+      ]
+    }
+  ]
+}

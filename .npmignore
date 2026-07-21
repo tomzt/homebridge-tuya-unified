@@ -1,0 +1,10 @@
+.github/
+.vscode/
+.homebridge/
+src/
+test/
+.eslintrc.json
+eslint.config.mjs
+tsconfig.json
+tsconfig.tsbuildinfo
+*.log
