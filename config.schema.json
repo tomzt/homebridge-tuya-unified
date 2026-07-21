@@ -83,8 +83,8 @@
           "enableLocal": {
             "title": "Enable Local LAN Control",
             "type": "boolean",
-            "default": true,
-            "description": "Control devices directly over your local network when possible, falling back to cloud control."
+            "default": false,
+            "description": "Not yet implemented, reserved for future local control support. Devices are currently always controlled via Tuya Cloud, regardless of this setting."
           }
         }
       }
