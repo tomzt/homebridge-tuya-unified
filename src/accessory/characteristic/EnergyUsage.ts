@@ -18,7 +18,10 @@ export function configureEnergyUsage(
       service.addCharacteristic(amperes);
     }
     service.getCharacteristic(amperes).onGet(
-      createStatusGetter(accessory, currentSchema, isUnit(currentSchema, 'mA') ? 1000 : 0),
+      // Divisor is on top of the schema's own `scale`; mA needs an extra /1000
+      // to become amps, anything else (e.g. already 'A') needs none (i.e. 1,
+      // not 0 -- 0 here divides every reading by zero and reports Infinity).
+      createStatusGetter(accessory, currentSchema, isUnit(currentSchema, 'mA') ? 1000 : 1),
     );
   }
 

@@ -37,6 +37,18 @@ See [SUPPORTED_DEVICES.md](./SUPPORTED_DEVICES.md) for the full category table.
 
 Port the cloud/local core from **[homebridge-tuya-platform](https://github.com/0x5e/homebridge-tuya-platform) (0x5e), branch `develop_1.7.0`**, as the base — not a merge/copy of both upstream repos. `tuya-homebridge` (official Tuya plugin) is credited in [NOTICE](./NOTICE) as prior art but is not being ported line-for-line; it was cross-checked once (see below) and found architecturally equivalent to 0x5e's Cloud+MQTT approach.
 
+### Scope correction (2026-07-26): a third source is in scope — `@milo526/homebridge-tuya-web`
+
+During real-device testing, some of the user's devices weren't discoverable through the official Tuya Cloud API path (0x5e/tuya-homebridge architecture) at all — only through `@milo526/homebridge-tuya-web`, which the user confirmed (with a screenshot of their live production Homebridge instance) they run **alongside** `@0x5e/homebridge-tuya-platform` specifically because neither one alone sees their full device list. This wasn't recorded anywhere in this file before now; earlier text here and in README only named two sources. Treat this correction as authoritative — it's based on the user's own confirmed production setup, not a guess.
+
+What's different about this third source, verified against its repo (`milo526/homebridge-tuya-web`, MIT, actively maintained — pushed 2026-07-22, verified-by-homebridge + certified-by-hoobs):
+- **Different auth entirely**: a private/reverse-engineered "Tuya Web API" (same one Home Assistant's legacy Tuya integration used, via the `tuyaha` approach) — just `username`/`password`/`countryCode`/`platform` (`tuya`/`smart_life`/`jinvoo_smart`) against the app account directly. **No Tuya IoT Cloud Project, no Access ID/Secret, no "Link App Account" step at all.** This is precisely why it can see devices the Cloud-API path can't: it bypasses Cloud Project device-linking/authorization scope entirely.
+- Own device/DP model, unrelated to the `TuyaDeviceSchema` structure ported from 0x5e this session — integrating it is not "add another config option," it's a second parallel device-discovery + status/control pipeline.
+- Has features not in our current plugin: configurable polling interval, per-device type override, device hiding, scene whitelisting.
+- Real risk to weigh: it's an **unofficial** API with no support contract — could break without notice if Tuya changes it, unlike the officially documented signed Cloud API this plugin is otherwise built on.
+
+**Not yet designed or implemented.** This needs its own architecture pass (how the two device-discovery paths coexist, how to de-dupe devices reported by both, config schema shape) before writing code — do not start porting from it without that design step, same rule as everything else in this file.
+
 ## Verified findings (checked against upstream source directly, 2026-07-21)
 
 Do not take these as given without re-checking if upstream moves — they were confirmed by fetching `develop_1.7.0` via the GitHub API, not carried over secondhand:

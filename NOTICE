@@ -1,10 +1,14 @@
 homebridge-tuya-unified
 Copyright (c) 2026 tomzt
 
-This project's cloud/local device-control architecture and Tuya category/
-data-point handling are ported from, and derived in part from, the following
-upstream open-source projects. Both are licensed under the MIT License; their
-license text is reproduced below as required.
+This project's cloud device-control architecture and Tuya category/data-point
+handling are ported from, and derived in part from, homebridge-tuya-platform
+(0x5e) below. tuya-homebridge (the official Tuya plugin) is included here for
+historical attribution: its architecture was cross-checked once during this
+project's initial design and found equivalent, but no code was copied from it
+directly, and as of 2026 it appears superseded — its own README credits 0x5e
+as the maintainer of the actively developed continuation. Both projects are
+MIT licensed; their license text is reproduced below as required.
 
 --------------------------------------------------------------------------------
 homebridge-tuya-platform

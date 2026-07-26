@@ -1,6 +1,6 @@
 # homebridge-tuya-unified
 
-Unified [Homebridge](https://homebridge.io) plugin for Tuya smart home devices, merging the capabilities of [homebridge-tuya-platform](https://github.com/0x5e/homebridge-tuya-platform) and the official [tuya-homebridge](https://github.com/tuya/tuya-homebridge) plugin into one package that targets current Homebridge versions (v1.8 LTS and v2).
+Unified [Homebridge](https://homebridge.io) plugin for Tuya smart home devices, built on [homebridge-tuya-platform](https://github.com/0x5e/homebridge-tuya-platform)'s Cloud API + MQTT architecture, that targets current Homebridge versions (v1.8 LTS and v2). A second device-discovery path — covering devices the official Cloud API can't see on its own — is planned but not yet built; see [Project status](#project-status).
 
 > **This file is the source of truth for the project's description and setup.** A Thai translation is kept in [README.th.md](./README.th.md) for convenience — if the two ever disagree, this file wins. For task-by-task build progress across sessions, see [NOTES.md](./NOTES.md) instead — that's the authoritative, continuously-updated checklist.
 
@@ -8,7 +8,11 @@ Unified [Homebridge](https://homebridge.io) plugin for Tuya smart home devices, 
 
 ## Why this exists
 
-Both source plugins cover Tuya device categories thoroughly between them, but neither has kept pace with recent Homebridge releases. This project ports 0x5e/homebridge-tuya-platform's Cloud API + MQTT push architecture into a single actively maintained plugin (`tuya-homebridge`, the official Tuya plugin, uses the same Cloud+MQTT approach and is credited as prior art, but isn't ported line-for-line). Neither upstream project implements local LAN device control — despite this project's package name, "local" control is a roadmap item, not a current feature; see [NOTES.md](./NOTES.md) for what was verified and why. Both upstream projects are MIT licensed — see [NOTICE](./NOTICE) for attribution.
+[homebridge-tuya-platform](https://github.com/0x5e/homebridge-tuya-platform) (0x5e) is the actively maintained core this project is built on — its Cloud API + MQTT push architecture is ported and verified directly against its source. The official [tuya-homebridge](https://github.com/tuya/tuya-homebridge) plugin covers the same ground architecturally, but as of 2026 appears superseded: its own README credits 0x5e as the maintainer of the actively developed continuation, and it hasn't been pushed to in two years. It's credited in [NOTICE](./NOTICE) for historical reasons, not because code was copied from it.
+
+In practice, the official Tuya Cloud API only sees devices explicitly linked to a Tuya Cloud Project — some real-world setups have devices that never got linked and only show up through Tuya's separate, unofficial "Web API" (the same one Home Assistant's legacy Tuya integration and [homebridge-tuya-web](https://github.com/milo526/homebridge-tuya-web) use). Covering that gap is planned but **not yet implemented** — see [Project status](#project-status) and [NOTES.md](./NOTES.md) for the current design status.
+
+Neither upstream project implements local LAN device control — despite this project's package name, "local" control is a roadmap item, not a current feature; see [NOTES.md](./NOTES.md) for what was verified and why.
 
 ## Requirements
 
@@ -34,7 +38,8 @@ Full detail and the live task checklist live in [NOTES.md](./NOTES.md); summary:
 
 - **Scaffolding** — package/build/lint/CI setup, MIT license and [NOTICE](./NOTICE) attribution. Done.
 - **Cloud/local core** — `TuyaOpenAPI` (signed REST client, Custom + Smart Home project login), `TuyaOpenMQ` (MQTT push), and the `TuyaDevice`/`TuyaDeviceManager` device layer are ported from [homebridge-tuya-platform](https://github.com/0x5e/homebridge-tuya-platform) (0x5e) and verified directly against its source. `src/platform.ts` authenticates, starts MQTT, and fetches the device/scene list. Done — Cloud + MQTT only, local LAN control is not implemented by either upstream project so it stays a roadmap item (`options.enableLocal` in [config.schema.json](./config.schema.json) describes a not-yet-built feature).
-- **DP mapping + device services** — translating Tuya data points to HomeKit characteristics and registering actual accessories for the MVP categories (`Switch`/`Outlet`, `Lightbulb`, `WindowCovering`/`GarageDoorOpener`). Not started — no HomeKit accessories are created yet, even though devices are now fetched from the Cloud.
+- **DP mapping + device services** — translating Tuya data points to HomeKit characteristics and registering actual accessories for the MVP categories (`Switch`/`Outlet`, `Lightbulb`/`Dimmer`, `WindowCovering`/`GarageDoorOpener`). Done and verified against real devices; other categories get a bare accessory (info only) with a logged warning rather than being silently skipped.
+- **Second device-discovery path (unofficial Tuya Web API)** — covers devices that never got linked to a Tuya Cloud Project and so are invisible to the official Cloud API above. Not started — no config surface or code exists for this yet; see [NOTES.md](./NOTES.md) for the design status.
 - **Tests** — Jest/ts-jest are configured but there are no test files yet.
 
 See [NOTES.md](./NOTES.md) for the full task checklist and the reasoning behind each architecture decision.
