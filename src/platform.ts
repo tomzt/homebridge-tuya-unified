@@ -3,23 +3,28 @@ import { API, Characteristic, DynamicPlatformPlugin, Logging, PlatformAccessory,
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { TuyaUnifiedPlatformConfig, ProjectType } from './config';
 import TuyaOpenAPI, { LOGIN_ERROR_MESSAGES } from './core/TuyaOpenAPI';
-import TuyaDevice from './device/TuyaDevice';
+import TuyaDevice, { TuyaDeviceStatus } from './device/TuyaDevice';
 import TuyaDeviceManager from './device/TuyaDeviceManager';
 import TuyaHomeDeviceManager from './device/TuyaHomeDeviceManager';
 import TuyaCustomDeviceManager from './device/TuyaCustomDeviceManager';
+import AccessoryFactory from './accessory/AccessoryFactory';
+import BaseAccessory from './accessory/BaseAccessory';
 
 /**
  * Cloud login (both Custom and Smart Home Tuya IoT project types), device
- * discovery, and MQTT push are wired up here. DP-to-HomeKit mapping and
- * per-category accessory handlers are a follow-up task (see NOTES.md) — this
- * class authenticates, fetches the device list, and keeps it updated over
- * MQTT, but does not yet register HomeKit accessories for those devices.
+ * discovery, and MQTT push are wired up here, along with DP-to-HomeKit
+ * mapping for the MVP categories (see NOTES.md "MVP scope") via
+ * AccessoryFactory. Devices outside that category set still get a bare
+ * accessory (info + battery service, no controls) rather than being skipped.
  */
 export class TuyaUnifiedPlatform implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
 
+  // Cached/registered PlatformAccessory instances, keyed by HomeKit UUID.
   public readonly accessories: Map<string, PlatformAccessory> = new Map();
+  // Live accessory handlers (DP mapping + HomeKit wiring), keyed by Tuya device ID.
+  public readonly handlers: Map<string, BaseAccessory> = new Map();
 
   public readonly options: TuyaUnifiedPlatformConfig;
   public deviceManager?: TuyaDeviceManager;
@@ -61,24 +66,83 @@ export class TuyaUnifiedPlatform implements DynamicPlatformPlugin {
     this.devices = devices;
     this.log.info(`Got ${devices.length} device(s) and scene(s) from Tuya Cloud.`);
 
+    // Register/refresh an accessory for every device, then drop cached
+    // accessories that no longer correspond to a known device.
+    const staleUUIDs = new Set(this.accessories.keys());
+    for (const device of devices) {
+      this.addAccessory(device);
+      staleUUIDs.delete(this.api.hap.uuid.generate(device.id));
+    }
+    for (const uuid of staleUUIDs) {
+      const accessory = this.accessories.get(uuid)!;
+      this.log.info('Removing unused accessory from cache:', accessory.displayName);
+      this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+      this.accessories.delete(uuid);
+    }
+
     this.deviceManager.on(TuyaDeviceManager.Events.DEVICE_ADD, (device: TuyaDevice) => {
       this.log.info('Device added:', device.name);
       this.devices.push(device);
+      this.addAccessory(device);
     });
     this.deviceManager.on(TuyaDeviceManager.Events.DEVICE_DELETE, (deviceID: string) => {
       this.log.info('Device removed:', deviceID);
       this.devices = this.devices.filter(device => device.id !== deviceID);
+      this.removeAccessory(deviceID);
     });
-    this.deviceManager.on(TuyaDeviceManager.Events.DEVICE_STATUS_UPDATE, (device: TuyaDevice) => {
+    this.deviceManager.on(TuyaDeviceManager.Events.DEVICE_STATUS_UPDATE, (device: TuyaDevice, status: TuyaDeviceStatus[]) => {
       this.log.debug('Device status updated:', device.name);
+      this.handlers.get(device.id)?.onDeviceStatusUpdate(status);
     });
+    this.deviceManager.on(TuyaDeviceManager.Events.DEVICE_INFO_UPDATE, (device: TuyaDevice, info) => {
+      this.log.debug('Device info updated:', device.name);
+      this.handlers.get(device.id)?.onDeviceInfoUpdate(info);
+    });
+  }
+
+  /**
+   * Create (or reuse a cached) PlatformAccessory for a device, wire it up
+   * via AccessoryFactory, and register it with Homebridge if it's new.
+   */
+  addAccessory(device: TuyaDevice) {
+    const uuid = this.api.hap.uuid.generate(device.id);
+    let accessory = this.accessories.get(uuid);
+    let isNew = false;
+
+    if (!accessory) {
+      isNew = true;
+      accessory = new this.api.platformAccessory(device.name, uuid);
+    }
+    accessory.context.deviceID = device.id;
+
+    const handler = AccessoryFactory.createAccessory(this, accessory, device);
+    this.handlers.set(device.id, handler);
+    this.accessories.set(uuid, accessory);
+
+    if (isNew) {
+      this.log.info('Adding new accessory:', device.name);
+      this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+    }
+  }
+
+  removeAccessory(deviceID: string) {
+    const handler = this.handlers.get(deviceID);
+    if (!handler) {
+      return;
+    }
+
+    this.handlers.delete(deviceID);
+    this.accessories.delete(handler.accessory.UUID);
+    this.log.info('Removing accessory:', handler.accessory.displayName);
+    this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [handler.accessory]);
   }
 
   private async initHomeProject(): Promise<TuyaDevice[] | undefined> {
     const { endpoint, accessId, accessSecret, countryCode, username, password, appSchema } = this.options;
+    const countryCodeNumber = Number(countryCode);
 
     const api = new TuyaOpenAPI(
-      endpoint || TuyaOpenAPI.getDefaultEndpoint(countryCode),
+      endpoint || TuyaOpenAPI.getDefaultEndpoint(countryCodeNumber),
       accessId,
       accessSecret,
       this.log,
@@ -86,7 +150,7 @@ export class TuyaUnifiedPlatform implements DynamicPlatformPlugin {
     const deviceManager = new TuyaHomeDeviceManager(api);
 
     this.log.info('Logging in to Tuya Cloud (Smart Home project)...');
-    let res = await api.homeLogin(countryCode, username, password, appSchema);
+    let res = await api.homeLogin(countryCodeNumber, username, password, appSchema);
     if (res.success === false) {
       this.log.error(`Login failed. code=${res.code}, msg=${res.msg}`);
       if (LOGIN_ERROR_MESSAGES[res.code]) {

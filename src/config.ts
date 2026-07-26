@@ -8,6 +8,7 @@ import { PlatformConfig } from 'homebridge';
 export interface TuyaUnifiedPlatformOptions {
   projectType?: 1 | 2;
   enableLocal?: boolean;
+  debug?: boolean;
 }
 
 export interface TuyaUnifiedPlatformConfig extends PlatformConfig {
@@ -15,7 +16,9 @@ export interface TuyaUnifiedPlatformConfig extends PlatformConfig {
   accessId: string;
   accessSecret: string;
   appSchema: string;
-  countryCode: number;
+  // Text field in config.schema.json on purpose (not a number input) — see
+  // there for why. Convert to a number at the point of use.
+  countryCode: string;
   username: string;
   password: string;
   options?: TuyaUnifiedPlatformOptions;

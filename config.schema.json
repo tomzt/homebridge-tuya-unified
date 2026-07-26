@@ -51,8 +51,9 @@
       },
       "countryCode": {
         "title": "Country Code",
-        "type": "integer",
-        "description": "Phone country code used to link your Tuya/Smart Life app account (e.g. 1 for US, 66 for Thailand).",
+        "type": "string",
+        "pattern": "^[0-9]+$",
+        "description": "Phone country code used to link your Tuya/Smart Life app account, digits only (e.g. 1 for US, 66 for Thailand). Text field on purpose — a number input's scroll-wheel can silently change this value.",
         "required": true
       },
       "username": {
@@ -85,6 +86,12 @@
             "type": "boolean",
             "default": false,
             "description": "Not yet implemented, reserved for future local control support. Devices are currently always controlled via Tuya Cloud, regardless of this setting."
+          },
+          "debug": {
+            "title": "Debug Logging",
+            "type": "boolean",
+            "default": false,
+            "description": "Log extra detail per accessory (schema/status changes, characteristic updates) to help diagnose device mapping issues."
           }
         }
       }
@@ -105,7 +112,8 @@
       "expandable": true,
       "items": [
         "options.projectType",
-        "options.enableLocal"
+        "options.enableLocal",
+        "options.debug"
       ]
     }
   ]
