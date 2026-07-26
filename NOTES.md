@@ -1,6 +1,8 @@
 # Project notes (source of truth across sessions)
 
-This file — not any assistant's local `CLAUDE.md`, which is per-machine and does **not** sync across environments — is the durable record of scope, architecture decisions, and task progress for this repo. Update it at the end of every sub-task.
+This file is the durable, cross-session record of scope, architecture decisions, and task progress for this repo. Update it at the end of every sub-task.
+
+**Note on `CLAUDE.md`:** the project-root [CLAUDE.md](./CLAUDE.md) in this repo **is git-tracked and committed** (confirmed 2026-07-26, commits `f437484`/`c79f292`) and is the source of truth for the Mac mini dev/deploy workflow specifically (SSH, docker-compose paths, container quirks). An earlier version of this note warned that "CLAUDE.md doesn't sync across environments" — that was about a *different, unrelated* machine's global `~/.claude/CLAUDE.md` config encountered during an early session, not this file. Don't assume this repo's `CLAUDE.md` is stale or machine-local without checking `git log CLAUDE.md` first.
 
 ## Working Agreement
 
@@ -54,6 +56,7 @@ Do not take these as given without re-checking if upstream moves — they were c
 
 - [x] **Scaffold** — package.json, tsconfig, ESLint flat config, config.schema.json, CI workflow, platform lifecycle stub that loads cleanly (commit `50abb33`)
 - [x] **Cloud/local core** — ported `TuyaOpenAPI` (auth + signed REST client), `TuyaOpenMQ` (MQTT push, message decrypt/reorder), `TuyaDevice`/`TuyaDeviceManager`/`TuyaHomeDeviceManager`/`TuyaCustomDeviceManager` (device model + discovery for both Tuya project types), `util/Logger` (PrefixLogger). `platform.ts` now logs in (Custom or Smart Home project type, per `options.projectType`), starts MQTT, and fetches the device/scene list — but does not yet register HomeKit accessories for them (that's "Device services" below). `tsconfig.json` needed `"noImplicitAny": false` added to match upstream's own tsconfig — the ported code relies on it throughout for the loosely-typed Tuya API responses. Cloud + MQTT only — local LAN excluded per above. `npm run build` and `npm run lint` both pass clean (0 errors).
+- [x] **Dev deploy loop (Mac mini)** — verified working end-to-end: `git pull` → `npm install`+`npm run build` inside the `homebridge-dev` container → `npm install /plugin --save` into `/var/lib/homebridge` (not a raw symlink, and not `/homebridge` — see [CLAUDE.md](./CLAUDE.md) for why the naive approach silently fails on this image) → `docker restart homebridge-dev`. Confirmed via container logs: `Loaded plugin: homebridge-tuya-unified@0.1.0`, `Registering platform 'homebridge-tuya-unified.TuyaUnified'` (2026-07-26). `~/hb-dev/deploy.sh` on the mini implements this; not committed to this repo (machine-local tooling).
 - [ ] **DP mapping** — data-point → HomeKit characteristic mapping for the 3 MVP categories, cross-checked against `BaseAccessory.ts` + category accessory files upstream.
 - [ ] **Device services** — `AccessoryFactory` + `SwitchAccessory`/`OutletAccessory`/`LightAccessory`/`WindowCoveringAccessory`/`GarageDoorAccessory` handlers, scoped to MVP categories only (not the full upstream category list).
 - [ ] **Homebridge v1.8+/v2 compat** — verify against both engine ranges declared in package.json.
