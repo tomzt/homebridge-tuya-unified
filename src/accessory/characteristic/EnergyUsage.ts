@@ -59,7 +59,15 @@ function createStatusGetter(accessory: BaseAccessory, schema: TuyaDeviceSchema, 
   divisor *= Math.pow(10, property.scale);
   return () => {
     const status = accessory.getStatus(schema.code)!;
-    return (status.value as number) / divisor;
+    const value = (status.value as number) / divisor;
+    if (!Number.isFinite(value)) {
+      accessory.log.warn(
+        'EnergyUsage: non-finite value for %s (value=%o, divisor=%o, property=%o) -- reporting 0 instead',
+        schema.code, status.value, divisor, property,
+      );
+      return 0;
+    }
+    return value;
   };
 }
 
